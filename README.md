@@ -200,6 +200,52 @@ Tokens expire after **8 hours** (D-20) and carry only the user id (`sub`) and th
 expiry — never the password or its hash. A JWT is signed, not encrypted: anyone
 can decode the payload.
 
+## Sistema distribuido (PFO3)
+
+PFO3 rediseña el gestor como sistema distribuido cliente-servidor con sockets.
+El diagrama está en `docs/diagramas/arquitectura-distribuida.drawio` (y `.md`
+con Mermaid).
+
+### Componentes
+
+- `servidor_socket.py`: servidor TCP que recibe operaciones, las encola en una
+  cola de mensajes (`queue.Queue`, simula RabbitMQ) y las distribuye a un pool
+  de workers con hilos. Cada worker ejecuta la lógica de dominio (reutilizada
+  de `servicios.py`) contra el almacenamiento (SQLite, simula PostgreSQL).
+- `cliente_socket.py`: cliente de consola que habla por TCP usando el protocolo
+  de `protocolo.py` (JSON con longitud prefijada).
+- `protocolo.py`: framing de mensajes sobre TCP.
+- `servicios.py`: lógica de dominio independiente de transporte.
+
+### Levantar el servidor socket
+
+```powershell
+$env:SECRET_KEY = "a long random value"
+python servidor_socket.py
+```
+
+Por defecto escucha en `127.0.0.1:9000`. Configurable por código (host/puerto).
+
+### Levantar el cliente socket
+
+En otra terminal:
+
+```powershell
+$env:PFO3_API_URL = "127.0.0.1:9000"
+python cliente_socket.py
+```
+
+El menú es el mismo que el cliente HTTP (registrar, login, listar, crear, editar,
+borrar, salir).
+
+### Nota sobre la simulación
+
+RabbitMQ, PostgreSQL, Nginx/HAProxy y S3 se representan en el diagrama como
+componentes del diseño. En el código se simulan con `queue.Queue`, SQLite y un
+único proceso con pool de hilos, para mantener el proyecto testeable sin
+dependencias externas. La lógica de dominio (`servicios.py`) es la misma que
+usa la API REST, por lo que el comportamiento es idéntico.
+
 ## Running the tests
 
 ```bash

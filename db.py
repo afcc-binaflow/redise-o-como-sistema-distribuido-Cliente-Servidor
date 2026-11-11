@@ -16,7 +16,7 @@ import sqlite3
 from flask import current_app, g
 
 
-def conectar(ruta):
+def conectar(ruta, check_same_thread=True):
     """Abre una conexion a SQLite lista para usar.
 
     Los PRAGMA se aplican aca, en el unico lugar donde se abre una conexion.
@@ -32,7 +32,7 @@ def conectar(ruta):
     `row_factory` hace que las filas se comporten como diccionarios, asi que la
     capa HTTP arma el JSON por nombre de columna y no por indice.
     """
-    conexion = sqlite3.connect(ruta)
+    conexion = sqlite3.connect(ruta, check_same_thread=check_same_thread)
     conexion.row_factory = sqlite3.Row
     conexion.execute("PRAGMA foreign_keys = ON")
     conexion.execute("PRAGMA busy_timeout = 5000")
