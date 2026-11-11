@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+env/
+
+# Entornos y secretos
+.env
+.env.*
+!.env.example
+
+# Base de datos SQLite
+*.sqlite3
+*.db
+
+# Herramientas de testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Herramientas de agentes (cache local y regenerable)
+.atl/
+
+# OS / editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Notas internas de proceso
+AGENTS.md
