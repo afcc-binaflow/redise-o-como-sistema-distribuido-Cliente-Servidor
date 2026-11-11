@@ -138,7 +138,13 @@ class ServidorSocket:
     def _obtener_conexion(self):
         if self.conexion_compartida is not None:
             return self.conexion_compartida, False
-        return conectar(self.ruta_db), True
+        conexion = conectar(self.ruta_db)
+        try:
+            from db import inicializar
+            inicializar(conexion)
+        except Exception:  # noqa: BLE001
+            pass
+        return conexion, True
 
     def _worker_loop(self):
         while self._activo.is_set():
@@ -261,7 +267,15 @@ if __name__ == "__main__":
         else:
             print("Modo real: intentando RabbitMQ/PostgreSQL (fallback a simulacion si no disponibles).", file=sys.stderr)
 
-    srv = ServidorSocket(host=host, puerto=puerto, clave=clave)
+    import os as _os
+    from pathlib import Path as _Path
+    ruta_db = _os.environ.get("DATABASE_PATH", "instance/pfo3.db")
+    _Path(ruta_db).parent.mkdir(parents=True, exist_ok=True)
+    from db import conectar as _conectar, inicializar as _inicializar
+    _c = _conectar(ruta_db)
+    _inicializar(_c)
+    _c.close()
+    srv = ServidorSocket(host=host, puerto=puerto, clave=clave, ruta_db=ruta_db)
     srv.iniciar()
     print("Servidor socket escuchando en %s:%d (real=%s)" % (host, srv.puerto, real))
     try:
