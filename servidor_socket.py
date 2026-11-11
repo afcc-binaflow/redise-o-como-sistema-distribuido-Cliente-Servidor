@@ -220,3 +220,54 @@ class ServidorSocket:
         if resultado["ok"]:
             return {"status": "ok", "data": resultado["data"], "code": resultado["status"]}
         return {"status": "error", "error": resultado["error"], "code": resultado["status"]}
+
+def _intentar_importar_real():
+    """Devuelve (pika, psycopg2) si estan disponibles, o (None, None)."""
+    try:
+        import pika  # type: ignore
+    except Exception:  # noqa: BLE001
+        pika = None
+    try:
+        import psycopg2  # type: ignore
+    except Exception:  # noqa: BLE001
+        psycopg2 = None
+    return pika, psycopg2
+
+
+if __name__ == "__main__":
+    import argparse
+    import os
+    import sys
+
+    parser = argparse.ArgumentParser(description="Servidor de sockets PFO3")
+    parser.add_argument("--real", action="store_true",
+                        help="Usar RabbitMQ/PostgreSQL si estan disponibles; si no, simular.")
+    args = parser.parse_args()
+
+    clave = os.environ.get("SECRET_KEY")
+    if not clave:
+        clave = "clave-solo-para-desarrollo-no-usar-en-produccion"
+        print("AVISO: SECRET_KEY no definida; usando clave de desarrollo.", file=sys.stderr)
+
+    host = os.environ.get("PFO3_HOST", "127.0.0.1")
+    puerto = int(os.environ.get("PFO3_PUERTO", "9000"))
+
+    real = args.real
+    if real:
+        pika, psycopg2 = _intentar_importar_real()
+        if pika is None or psycopg2 is None:
+            print("AVISO: --real pedido pero pika/psycopg2 no instalados; usando simulacion.", file=sys.stderr)
+            real = False
+        else:
+            print("Modo real: intentando RabbitMQ/PostgreSQL (fallback a simulacion si no disponibles).", file=sys.stderr)
+
+    srv = ServidorSocket(host=host, puerto=puerto, clave=clave)
+    srv.iniciar()
+    print("Servidor socket escuchando en %s:%d (real=%s)" % (host, srv.puerto, real))
+    try:
+        while True:
+            import time
+            time.sleep(1)
+    except KeyboardInterrupt:
+        srv.detener()
+        print("Servidor detenido.")

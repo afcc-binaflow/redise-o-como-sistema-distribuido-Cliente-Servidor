@@ -220,11 +220,17 @@ con Mermaid).
 ### Levantar el servidor socket
 
 ```powershell
+# Sin credenciales: usa una clave de desarrollo automaticamente (con aviso).
+python servidor_socket.py
+
+# Con clave real:
 $env:SECRET_KEY = "a long random value"
 python servidor_socket.py
 ```
 
-Por defecto escucha en `127.0.0.1:9000`. Configurable por código (host/puerto).
+Por defecto escucha en `127.0.0.1:9000`. Configurable con `PFO3_HOST` y
+`PFO3_PUERTO`. Acepta `--real` para intentar RabbitMQ/PostgreSQL si estan
+disponibles, con fallback automatico a la simulacion.
 
 ### Levantar el cliente socket
 
